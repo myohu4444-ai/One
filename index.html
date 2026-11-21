@@ -1,0 +1,189 @@
+# Motorcycle Learning Guide PDF Generator
+# Install: pip install reportlab
+# Run: python motorcycle_learning_guide.py
+# Output: motorcycle_learning_guide.pdf
+#
+# This is an educational overview. Wiring colors, connector pins and procedures
+# vary by make/model/year. Use the exact factory service manual for repairs.
+
+import os
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.colors import HexColor, black, white
+from reportlab.lib.units import mm
+
+OUT = "motorcycle_learning_guide.pdf"
+W, H = A4
+
+def setup_font():
+    candidates = [
+        "/usr/share/fonts/truetype/noto/NotoSansMyanmar-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSansMyanmar-VF.ttf",
+        "NotoSansMyanmar-Regular.ttf",
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            pdfmetrics.registerFont(TTFont("Myanmar", path))
+            return "Myanmar"
+    return "Helvetica"  # Install Noto Sans Myanmar for Burmese text.
+
+FONT = setup_font()
+
+def txt(c, x, y, s, size=10, color=black):
+    c.setFillColor(color)
+    c.setFont(FONT, size)
+    c.drawString(x, y, s)
+
+def heading(c, title, subtitle=""):
+    c.setFillColor(HexColor("#17324D"))
+    c.rect(0, H-34*mm, W, 34*mm, fill=1, stroke=0)
+    txt(c, 18*mm, H-17*mm, title, 18, white)
+    if subtitle:
+        txt(c, 18*mm, H-25*mm, subtitle, 9, HexColor("#DCEAF5"))
+
+def footer(c, n):
+    c.setFillColor(HexColor("#64748B"))
+    c.setFont("Helvetica", 8)
+    c.drawRightString(W-15*mm, 10*mm, f"Motorcycle Learning Guide  |  {n}")
+
+def box(c, x, y, w, h, title, detail="", fill="#EEF4F8"):
+    c.setFillColor(HexColor(fill)); c.setStrokeColor(HexColor("#31566F"))
+    c.roundRect(x, y, w, h, 5, fill=1, stroke=1)
+    c.setFillColor(HexColor("#17324D")); c.setFont(FONT, 10)
+    c.drawCentredString(x+w/2, y+h-7*mm, title)
+    if detail:
+        c.setFillColor(black); c.setFont(FONT, 8)
+        lines = detail.split("|")
+        yy = y+h-13*mm
+        for line in lines:
+            c.drawCentredString(x+w/2, yy, line); yy -= 5*mm
+
+def arrow(c, x1, y1, x2, y2):
+    c.setStrokeColor(HexColor("#D97706")); c.setFillColor(HexColor("#D97706"))
+    c.setLineWidth(1.6); c.line(x1,y1,x2,y2)
+    import math
+    a = math.atan2(y2-y1, x2-x1)
+    l=5*mm
+    p1=(x2-l*math.cos(a-0.45), y2-l*math.sin(a-0.45))
+    p2=(x2-l*math.cos(a+0.45), y2-l*math.sin(a+0.45))
+    path=c.beginPath(); path.moveTo(x2,y2); path.lineTo(*p1); path.lineTo(*p2); path.close()
+    c.drawPath(path, fill=1, stroke=0)
+
+def page_intro(c):
+    heading(c, "ဆိုင်ကယ် လေ့လာရေးလမ်းညွှန်", "ဝါယာရင်းစနစ်နှင့် အင်ဂျင်အမျိုးအစားများ | Educational overview")
+    txt(c, 18*mm, H-55*mm, "ဒီစာအုပ်ကို အပိုင်း ၂ ပိုင်းခွဲထားပါတယ်။", 13)
+    box(c, 20*mm, H-100*mm, 75*mm, 30*mm, "ဝါယာရင်းပိုင်း", "CDI • မီးအားသွင်း • Starter • EFI")
+    box(c, 115*mm, H-100*mm, 75*mm, 30*mm, "အင်ဂျင်ပိုင်း", "2-stroke • 4-stroke • Cooling")
+    txt(c, 20*mm, H-120*mm, "အရေးကြီးသော မှတ်ချက်", 12, HexColor("#B45309"))
+    txt(c, 20*mm, H-130*mm, "ဆိုင်ကယ်တစ်မျိုးနှင့်တစ်မျိုး ကြိုးအရောင်၊ ပင်နံပါတ်နှင့် ချိတ်ဆက်ပုံ မတူနိုင်ပါ။", 9)
+    txt(c, 20*mm, H-138*mm, "ဤပုံများသည် စနစ်ကို နားလည်ရန် ရေးဆွဲထားသော အထွေထွေပုံများသာ ဖြစ်သည်။", 9)
+    txt(c, 20*mm, H-146*mm, "လက်တွေ့ပြုပြင်ရာတွင် မော်ဒယ်/နှစ်အလိုက် စက်ရုံထုတ် Service Manual ကိုသာ ကိုးကားပါ။", 9)
+    txt(c, 20*mm, H-170*mm, "မာတိကာ", 13)
+    topics = ["၁။ ဝါယာရင်းစနစ်၏ အခြေခံ", "၂။ AC CDI / DC CDI", "၃။ မီးအားသွင်းနှင့် Starter စနစ်",
+              "၄။ EFI စနစ်၏ အခြေခံ", "၅။ 2-stroke နှင့် 4-stroke အင်ဂျင်",
+              "၆။ အအေးပေးစနစ်နှင့် ဆလင်ဒါအမျိုးအစား"]
+    yy=H-182*mm
+    for t in topics:
+        txt(c, 25*mm, yy, "• "+t, 10); yy-=9*mm
+    footer(c,1); c.showPage()
+
+def page_wiring_basics(c):
+    heading(c, "အပိုင်း ၁ — ဝါယာရင်းပိုင်း", "Electrical system overview")
+    txt(c, 18*mm, H-48*mm, "အခြေခံအစိတ်အပိုင်းများနှင့် လျှပ်စစ်စီးဆင်းမှုကို အောက်ပါပုံတွင် ပြထားသည်။", 10)
+    box(c, 15*mm, H-92*mm, 42*mm, 25*mm, "ဘက်ထရီ", "Battery")
+    box(c, 68*mm, H-92*mm, 42*mm, 25*mm, "Fuse", "ကာကွယ်ရေး")
+    box(c, 121*mm, H-92*mm, 42*mm, 25*mm, "သော့ခလောက်", "Ignition switch")
+    box(c, 158*mm, H-135*mm, 38*mm, 25*mm, "မီး/ဟွန်း", "Loads")
+    arrow(c,57*mm,H-79*mm,68*mm,H-79*mm)
+    arrow(c,110*mm,H-79*mm,121*mm,H-79*mm)
+    arrow(c,142*mm,H-92*mm,175*mm,H-110*mm)
+    txt(c, 18*mm, H-155*mm, "အမည်နှင့် လုပ်ဆောင်ချက်", 12)
+    rows = [
+        ("Battery", "စနစ်အတွက် လျှပ်စစ်စွမ်းအင်ကို သိုလှောင်ပေးသည်။"),
+        ("Fuse", "လျှပ်စီးကြောင်း မမှန်ကန်သောအခါ ဝါယာရင်းကို ကာကွယ်ရန် အသုံးပြုသည်။"),
+        ("Ignition switch", "သော့ဖွင့်/ပိတ်ခြင်းဖြင့် စနစ်ကို ထိန်းချုပ်သည်။"),
+        ("Ground/Earth", "လျှပ်စစ်ပတ်လမ်း၏ ပြန်လမ်းကြောင်း ဖြစ်သည်။"),
+    ]
+    yy=H-168*mm
+    for a,b in rows:
+        txt(c,20*mm,yy,a,9,HexColor("#1D4ED8")); txt(c,55*mm,yy,b,8); yy-=9*mm
+    footer(c,2); c.showPage()
+
+def page_cdi(c, title, subtitle, battery_label, source_label):
+    heading(c, title, subtitle)
+    y=H-85*mm
+    box(c, 14*mm,y,43*mm,26*mm,source_label,"စွမ်းအင်ရင်းမြစ်")
+    box(c, 68*mm,y,43*mm,26*mm,"CDI Unit","မီးပွားချိန်ကို ထိန်း")
+    box(c, 122*mm,y,43*mm,26*mm,"Ignition Coil","ဗို့အားမြှင့်")
+    box(c, 163*mm,y,34*mm,26*mm,"Spark Plug","မီးပွား")
+    arrow(c,57*mm,y+13*mm,68*mm,y+13*mm)
+    arrow(c,111*mm,y+13*mm,122*mm,y+13*mm)
+    arrow(c,165*mm,y+13*mm,163*mm,y+13*mm)
+    txt(c,18*mm,H-115*mm,"အခြေခံသဘောတရား",12)
+    txt(c,18*mm,H-128*mm,subtitle+" — အင်ဂျင်လည်ပတ်မှုနှင့် ကိုက်ညီသောအချိန်တွင် CDI က ignition coil ကို ထိန်းချုပ်ပေးသည်။",8)
+    txt(c,18*mm,H-145*mm,"ကွာခြားချက်",12)
+    txt(c,18*mm,H-158*mm,battery_label,9)
+    txt(c,18*mm,H-175*mm,"သတိပြုရန် — ဒီပုံသည် block diagram ဖြစ်ပြီး connector pinout သို့မဟုတ် ကြိုးအရောင်ဇယား မဟုတ်ပါ။",8,HexColor("#B45309"))
+    footer(c,3 if "AC" in title else 4); c.showPage()
+
+def page_charge_efi(c, page_no, title, subtitle, blocks):
+    heading(c,title,subtitle)
+    yy=H-80*mm
+    for i,(t,d) in enumerate(blocks):
+        x=15*mm+i*46*mm
+        box(c,x,yy,40*mm,28*mm,t,d)
+        if i<len(blocks)-1: arrow(c,x+40*mm,yy+14*mm,x+45*mm,yy+14*mm)
+    txt(c,18*mm,H-115*mm,"လုပ်ဆောင်ချက်အကျဉ်း",12)
+    yy=H-130*mm
+    for t,d in blocks:
+        txt(c,20*mm,yy,t,9,HexColor("#1D4ED8"))
+        txt(c,65*mm,yy,d.replace("|","၊ "),8); yy-=11*mm
+    txt(c,18*mm,H-205*mm,"မှတ်ချက် — EFI စနစ်တွင် ECU နှင့် sensor များ၏ အလုပ်လုပ်ပုံသည် မော်ဒယ်အလိုက် ကွဲပြားနိုင်သည်။",8)
+    footer(c,page_no); c.showPage()
+
+def engine_page(c, page_no, title, subtitle, steps, notes):
+    heading(c,title,subtitle)
+    # Conceptual four-stage diagram
+    xs=[28*mm,76*mm,124*mm,172*mm]
+    for i,(t,d) in enumerate(steps):
+        box(c,xs[i]-17*mm,H-105*mm,36*mm,35*mm,t,d)
+        if i<3: arrow(c,xs[i]+19*mm,H-87*mm,xs[i+1]-19*mm,H-87*mm)
+    txt(c,18*mm,H-130*mm,"အဓိကအချက်များ",12)
+    yy=H-144*mm
+    for n in notes:
+        txt(c,20*mm,yy,"• "+n,8); yy-=9*mm
+    txt(c,18*mm,H-205*mm,"ဤပုံသည် သဘောတရားရှင်းပြရန် ရေးဆွဲထားခြင်းဖြစ်ပြီး ဖြုတ်တပ်/ပြုပြင်ညွှန်ကြားချက် မဟုတ်ပါ။",8,HexColor("#B45309"))
+    footer(c,page_no); c.showPage()
+
+def make_pdf():
+    c=canvas.Canvas(OUT,pagesize=A4)
+    page_intro(c)
+    page_wiring_basics(c)
+    page_cdi(c,"AC CDI စနစ်","Stator မှ AC စွမ်းအင်ရယူသော CDI စနစ်","AC CDI တွင် battery မပါဘဲ အလုပ်လုပ်နိုင်သော ဒီဇိုင်းများရှိသော်လည်း မော်ဒယ်အလိုက် ကွဲပြားသည်။","Stator / Exciter")
+    page_cdi(c,"DC CDI စနစ်","Battery မှ DC စွမ်းအင်ရယူသော CDI စနစ်","DC CDI သည် ဘက်ထရီ/ထိန်းညှိထားသော DC supply ကို အားကိုးသည်။","Battery / DC")
+    page_charge_efi(c,5,"မီးအားသွင်းနှင့် Starter စနစ်","Charging and starting overview",[
+        ("Stator","AC ထုတ်ပေးသည်"),("Regulator","ဗို့အားထိန်းညှိသည်"),("Battery","အားသိုလှောင်သည်"),("Starter","အင်ဂျင်စတင်ရန် ကူညီသည်")])
+    page_charge_efi(c,6,"EFI စနစ်၏ အခြေခံ","Electronic Fuel Injection overview",[
+        ("Sensor","အခြေအနေတိုင်းတာ"),("ECU","အချက်အလက်တွက်ချက်"),("Injector","လောင်စာဖြန်း"),("Engine","လောင်ကျွမ်းမှုဖြစ်")])
+    engine_page(c,7,"အပိုင်း ၂ — အင်ဂျင်ပိုင်း","2-stroke engine | အလုပ်လုပ်ပုံ အကျဉ်း",[
+        ("Intake","လေ/ဆီဝင်"),("Compression","ဖိသိပ်"),("Power","စွမ်းအား"),("Exhaust","အငွေ့ထွက်")],
+        ["2-stroke အင်ဂျင်သည် crankshaft တစ်ပတ်လည်တွင် power cycle ပြီးမြောက်သည်။",
+         "Port များမှတစ်ဆင့် လေ/လောင်စာဝင်ခြင်းနှင့် အငွေ့ထွက်ခြင်း ဖြစ်ပေါ်သည်။"])
+    engine_page(c,8,"4-stroke အင်ဂျင်","4-stroke engine | အလုပ်လုပ်ပုံ အကျဉ်း",[
+        ("Intake","လေ/ဆီဝင်"),("Compression","ဖိသိပ်"),("Power","စွမ်းအား"),("Exhaust","အငွေ့ထွက်")],
+        ["Intake, Compression, Power, Exhaust ဟူသော stroke ၄ ခု ပါဝင်သည်။",
+         "Crankshaft နှစ်ပတ်လည်လျှင် power stroke တစ်ကြိမ် ဖြစ်ပေါ်သည်။",
+         "Valve timing ကို camshaft နှင့် valve train က ထိန်းချုပ်သည်။"])
+    engine_page(c,9,"အအေးပေးစနစ်နှင့် ဆလင်ဒါအမျိုးအစား","Cooling and cylinder layout",[
+        ("Air cooled","လေဖြင့်အေး"),("Liquid cooled","ရည်ဖြင့်အေး"),("Single","ဆလင်ဒါတစ်လုံး"),("Twin","ဆလင်ဒါနှစ်လုံး")],
+        ["Air-cooled စနစ်တွင် cooling fins များက အပူထုတ်လွှတ်မှုကို ကူညီသည်။",
+         "Liquid-cooled စနစ်တွင် coolant, radiator နှင့် pump တို့ ပါဝင်နိုင်သည်။",
+         "Single/Twin သည် ဆလင်ဒါအရေအတွက်ကို ဖော်ပြသည်။"])
+    c.save()
+    print("Created:", OUT)
+
+if __name__ == "__main__":
+    make_pdf()
+          
